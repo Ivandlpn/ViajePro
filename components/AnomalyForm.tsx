@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DEFECT_CATALOG } from '../constants';
 import type { Anomaly, Defect } from '../types';
@@ -8,6 +7,13 @@ interface AnomalyFormProps {
   onClose: () => void;
   initialLocation?: { lat: number; lng: number };
 }
+
+const XIcon: React.FC = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+  </svg>
+);
+
 
 const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocation }) => {
   const [selectedElement, setSelectedElement] = useState<string>(DEFECT_CATALOG[0]?.element || '');
@@ -65,6 +71,10 @@ const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocat
       reader.readAsDataURL(e.target.files[0]);
     }
   };
+  
+  const handleClearLocation = () => {
+    setAnomaly(prev => ({ ...prev, location: undefined }));
+  };
 
   const handleGetLocation = () => {
     setIsGettingLocation(true);
@@ -100,8 +110,8 @@ const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocat
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg animate-fade-in-up">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg animate-fade-in-up max-h-full overflow-y-auto">
         <h2 className="text-2xl font-bold text-[#1A4488] mb-6">Registrar Nueva Anomalía</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -123,16 +133,23 @@ const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocat
            <div>
             <div className="flex justify-between items-center mb-1">
                 <label className="block text-sm font-medium text-[#333333]">Ubicación</label>
-                <button type="button" onClick={handleGetLocation} disabled={isGettingLocation} className="text-sm text-[#1A4488] hover:underline disabled:text-gray-400 disabled:cursor-not-allowed">
-                    {isGettingLocation ? 'Obteniendo...' : 'Actualizar Ubicación'}
-                </button>
+                <div className="flex items-center space-x-2">
+                   {anomaly.location && (
+                      <button type="button" onClick={handleClearLocation} className="p-1.5 text-red-600 hover:bg-red-100 rounded-full" aria-label="Eliminar ubicación" title="Eliminar ubicación">
+                          <XIcon />
+                      </button>
+                   )}
+                    <button type="button" onClick={handleGetLocation} disabled={isGettingLocation} className="text-sm text-[#1A4488] hover:underline disabled:text-gray-400 disabled:cursor-not-allowed">
+                        {isGettingLocation ? 'Obteniendo...' : 'Actualizar'}
+                    </button>
+                </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                  <input type="text" placeholder="Latitud" value={anomaly.location?.lat.toFixed(6) || ''} readOnly className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm bg-gray-100 text-gray-500 cursor-default" />
+                  <input type="text" placeholder="Latitud" value={anomaly.location?.lat.toFixed(6) || ''} readOnly className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm bg-white text-gray-700 cursor-default" />
               </div>
               <div>
-                  <input type="text" placeholder="Longitud" value={anomaly.location?.lng.toFixed(6) || ''} readOnly className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm bg-gray-100 text-gray-500 cursor-default" />
+                  <input type="text" placeholder="Longitud" value={anomaly.location?.lng.toFixed(6) || ''} readOnly className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm bg-white text-gray-700 cursor-default" />
               </div>
             </div>
           </div>

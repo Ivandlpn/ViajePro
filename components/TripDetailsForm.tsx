@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { CabinTrip } from '../types';
 
@@ -27,7 +26,7 @@ const InputField: React.FC<{
       onChange={onChange}
       placeholder={placeholder}
       required
-      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1A4488] focus:border-[#1A4488]"
+      className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1A4488] focus:border-[#1A4488] bg-white"
     />
   </div>
 );

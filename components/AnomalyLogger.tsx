@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Anomaly } from '../types';
 import AnomalyForm from './AnomalyForm';
@@ -67,9 +66,9 @@ const AnomalyLogger: React.FC<AnomalyLoggerProps> = ({ initialAnomalies, onUpdat
   
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h3 className="text-xl font-semibold text-[#1A4488]">Anomalías Detectadas</h3>
-        <button onClick={handleOpenModal} className="flex items-center bg-[#1A4488] text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-900 transition duration-300 shadow-md">
+        <button onClick={handleOpenModal} className="flex items-center bg-[#1A4488] text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-900 transition duration-300 shadow-md w-full sm:w-auto justify-center">
             <PlusIcon />
             Añadir Anomalía
         </button>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { CabinTrip } from '../types';
 import TripCard from './TripCard';
@@ -17,11 +16,11 @@ const PlusIcon: React.FC = () => (
 const Dashboard: React.FC<DashboardProps> = ({ trips, onStartNewTrip }) => {
   return (
     <div className="animate-fade-in">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h2 className="text-3xl font-semibold text-[#1A4488]">Registro de Viajes</h2>
         <button
           onClick={onStartNewTrip}
-          className="flex items-center bg-[#CB1823] text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 shadow-lg transform hover:scale-105"
+          className="flex items-center bg-[#CB1823] text-white font-bold py-2 px-4 rounded-lg hover:bg-red-700 transition duration-300 shadow-lg transform hover:scale-105 w-full sm:w-auto justify-center"
         >
           <PlusIcon />
           Iniciar Nuevo Viaje
