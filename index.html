@@ -21,6 +21,7 @@
     "react/": "https://aistudiocdn.com/react@^18.2.0/",
     "react": "https://aistudiocdn.com/react@^18.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^18.2.0/",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^18.2.0/client",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.17.0"
   }
 }
@@ -30,7 +31,43 @@
 </head>
   <body class="bg-white">
     <div id="root"></div>
-    <!-- Change script type to text/babel and tell Babel it's a module -->
-    <script type="text/babel" data-type="module" src="./index.tsx"></script>
+    
+    <!-- This script fetches the TSX code, transpiles it with Babel, and injects it to run -->
+    <script>
+      async function loadAndRunApp() {
+        try {
+          // 1. Fetch the source code as plain text
+          const response = await fetch('./index.tsx');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch main script: ${response.status} ${response.statusText}`);
+          }
+          const tsxCode = await response.text();
+
+          // 2. Transpile the code using Babel
+          const babelResult = Babel.transform(tsxCode, {
+            presets: ['react', 'typescript'],
+            filename: 'index.tsx' // For better error messages
+          });
+          
+          if (!babelResult || !babelResult.code) {
+             throw new Error('Babel transpilation returned no code.');
+          }
+
+          // 3. Create a new script tag of type "module" and inject the transpiled code
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.textContent = babelResult.code;
+          document.body.appendChild(script);
+
+        } catch (error) {
+          console.error('Error loading application:', error);
+          const rootDiv = document.getElementById('root');
+          if (rootDiv) {
+            rootDiv.innerHTML = `<div style="padding: 2em; font-family: sans-serif; text-align: center; color: #d9534f;"><h1>Error al cargar la aplicación</h1><p>No se pudo iniciar la aplicación. Por favor, revise la consola para más detalles.</p><pre style="text-align: left; background: #f9f2f4; padding: 1em; border-radius: 5px; white-space: pre-wrap; word-break: break-all;">${error.message}</pre></div>`;
+          }
+        }
+      }
+      loadAndRunApp();
+    </script>
   </body>
 </html>
