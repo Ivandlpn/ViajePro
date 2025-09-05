@@ -1,3 +1,4 @@
+
 import React from 'react';
 import type { CabinTrip } from '../types';
 import TripCard from './TripCard';
@@ -5,6 +6,10 @@ import TripCard from './TripCard';
 interface DashboardProps {
   trips: CabinTrip[];
   onStartNewTrip: () => void;
+  onEditTrip: (tripId: string) => void;
+  onDeleteTrip: (tripId: string) => void;
+  onViewTrip: (tripId: string) => void;
+  onAddAnomaly: (tripId: string) => void;
 }
 
 const PlusIcon: React.FC = () => (
@@ -13,7 +18,7 @@ const PlusIcon: React.FC = () => (
     </svg>
 );
 
-const Dashboard: React.FC<DashboardProps> = ({ trips, onStartNewTrip }) => {
+const Dashboard: React.FC<DashboardProps> = ({ trips, onStartNewTrip, onEditTrip, onDeleteTrip, onViewTrip, onAddAnomaly }) => {
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -35,7 +40,14 @@ const Dashboard: React.FC<DashboardProps> = ({ trips, onStartNewTrip }) => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {trips.map(trip => (
-            <TripCard key={trip.id} trip={trip} />
+            <TripCard 
+              key={trip.id} 
+              trip={trip} 
+              onEdit={() => onEditTrip(trip.id)}
+              onDelete={() => onDeleteTrip(trip.id)}
+              onView={() => onViewTrip(trip.id)}
+              onAddAnomaly={() => onAddAnomaly(trip.id)}
+            />
           ))}
         </div>
       )}

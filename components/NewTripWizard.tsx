@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Anomaly, CabinTrip } from '../types';
 import TripDetailsForm from './TripDetailsForm';
@@ -5,21 +6,34 @@ import AnomalyLogger from './AnomalyLogger';
 import TripSummary from './TripSummary';
 
 interface NewTripWizardProps {
-  onSave: (newTrip: Omit<CabinTrip, 'id' | 'code'>) => void;
+  onSave: (tripData: Omit<CabinTrip, 'id' | 'code'> & { id?: string }) => void;
   onCancel: () => void;
+  editingTrip: CabinTrip | null;
+  initialStep?: number;
 }
 
-const NewTripWizard: React.FC<NewTripWizardProps> = ({ onSave, onCancel }) => {
-  const [step, setStep] = useState(1);
-  const [tripData, setTripData] = useState<Omit<CabinTrip, 'id' | 'code'>>({
-    line: '',
-    track: '',
-    date: new Date().toISOString().split('T')[0],
-    technician: '',
-    pkStart: '',
-    pkEnd: '',
-    anomalies: [],
-  });
+// FIX: Changed return type to CabinTrip and added a 'code' property to the initial data object
+// to ensure the tripData state has a consistent shape, resolving a TypeScript error in handleSave.
+const getInitialTripData = (editingTrip: CabinTrip | null): CabinTrip => {
+    if (editingTrip) {
+        return { ...editingTrip };
+    }
+    return {
+        id: '',
+        code: '',
+        line: 'L40',
+        track: 'Vía 1',
+        date: new Date().toISOString().split('T')[0],
+        technician: '',
+        pkStart: '',
+        pkEnd: '',
+        anomalies: [],
+    };
+};
+
+const NewTripWizard: React.FC<NewTripWizardProps> = ({ onSave, onCancel, editingTrip, initialStep = 1 }) => {
+  const [step, setStep] = useState(initialStep);
+  const [tripData, setTripData] = useState(getInitialTripData(editingTrip));
 
   const handleDetailsSubmit = (details: Partial<CabinTrip>) => {
     setTripData(prev => ({ ...prev, ...details }));
@@ -33,6 +47,11 @@ const NewTripWizard: React.FC<NewTripWizardProps> = ({ onSave, onCancel }) => {
   const handleAISummaryUpdate = (summary: string) => {
     setTripData(prev => ({ ...prev, aiSummary: summary }));
   };
+  
+  const handleSave = () => {
+      const { code, ...dataToSave } = tripData;
+      onSave(dataToSave);
+  }
 
   const steps = [
     { number: 1, title: 'Detalles del Viaje' },
@@ -43,6 +62,9 @@ const NewTripWizard: React.FC<NewTripWizardProps> = ({ onSave, onCancel }) => {
   return (
     <div className="bg-white p-4 sm:p-8 rounded-xl shadow-lg animate-fade-in-up w-full max-w-4xl mx-auto border border-gray-100">
         <div className="mb-8">
+            <h2 className="text-2xl font-bold text-center mb-2 text-[#1A4488]">
+              {editingTrip ? 'Editar Viaje' : 'Crear Nuevo Viaje'}
+            </h2>
             <div className="flex items-center justify-center">
                 {steps.map((s, index) => (
                     <React.Fragment key={s.number}>
@@ -60,7 +82,7 @@ const NewTripWizard: React.FC<NewTripWizardProps> = ({ onSave, onCancel }) => {
 
       {step === 1 && <TripDetailsForm initialData={tripData} onSubmit={handleDetailsSubmit} onCancel={onCancel} />}
       {step === 2 && <AnomalyLogger initialAnomalies={tripData.anomalies} onUpdate={handleAnomaliesUpdate} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-      {step === 3 && <TripSummary tripData={tripData} onSave={() => onSave(tripData)} onBack={() => setStep(2)} onAISummaryUpdate={handleAISummaryUpdate} />}
+      {step === 3 && <TripSummary tripData={tripData} onSave={handleSave} onBack={() => setStep(2)} onAISummaryUpdate={handleAISummaryUpdate} />}
     </div>
   );
 };

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DEFECT_CATALOG } from '../constants';
 import type { Anomaly, Defect } from '../types';
 
 interface AnomalyFormProps {
-  onSave: (anomaly: Omit<Anomaly, 'id'>) => void;
+  onSave: (anomaly: Omit<Anomaly, 'id'> & { id?: string }) => void;
   onClose: () => void;
-  initialLocation?: { lat: number; lng: number };
+  editingAnomaly?: Anomaly | null;
 }
 
 const XIcon: React.FC = () => (
@@ -14,36 +14,88 @@ const XIcon: React.FC = () => (
   </svg>
 );
 
+const getInitialAnomaly = (editingAnomaly?: Anomaly | null): Omit<Anomaly, 'id'> & { id?: string } => {
+  if (editingAnomaly) {
+    return { ...editingAnomaly };
+  }
+  
+  const defaultElement = DEFECT_CATALOG[0]?.element || '';
+  const defaultDefect = DEFECT_CATALOG[0]?.defects[0];
 
-const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocation }) => {
-  const [selectedElement, setSelectedElement] = useState<string>(DEFECT_CATALOG[0]?.element || '');
-  const [availableDefects, setAvailableDefects] = useState<Defect[]>([]);
-  const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [anomaly, setAnomaly] = useState<Omit<Anomaly, 'id'>>({
-    element: selectedElement,
-    defect: '',
-    level: DEFECT_CATALOG[0]?.defects[0]?.level,
+  return {
+    element: defaultElement,
+    defect: defaultDefect?.name || '',
+    level: defaultDefect?.level,
     pk: '',
     notes: '',
     photo: '',
-    location: initialLocation,
-  });
+    location: undefined,
+  };
+};
+
+const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, editingAnomaly }) => {
+  const [anomaly, setAnomaly] = useState(() => getInitialAnomaly(editingAnomaly));
+  const [selectedElement, setSelectedElement] = useState<string>(anomaly.element);
+  const [availableDefects, setAvailableDefects] = useState<Defect[]>([]);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGetLocation = () => {
+    setIsGettingLocation(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        setAnomaly(prev => ({
+          ...prev,
+          location: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }
+        }));
+        setIsGettingLocation(false);
+      }, (error: GeolocationPositionError) => {
+        console.error("Error getting location:", error.message);
+        alert(`No se pudo obtener la ubicación: ${error.message}. Por favor, compruebe los permisos de su navegador.`);
+        setIsGettingLocation(false);
+      });
+    } else {
+      alert("La geolocalización no es compatible con este navegador.");
+      setIsGettingLocation(false);
+    }
+  };
+
+  useEffect(() => {
+    // Automatically fetch location for new anomalies on component mount.
+    if (!editingAnomaly) {
+      handleGetLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty array ensures this effect runs only once on mount.
+
 
   useEffect(() => {
     const elementData = DEFECT_CATALOG.find(e => e.element === selectedElement);
     if (elementData) {
       setAvailableDefects(elementData.defects);
-      const defaultDefect = elementData.defects[0];
-      if (defaultDefect) {
-          setAnomaly(prev => ({
-            ...prev,
-            element: selectedElement,
-            defect: defaultDefect.name,
-            level: defaultDefect.level,
-          }));
+      
+      const isCurrentDefectInNewList = elementData.defects.some(d => d.name === anomaly.defect);
+
+      if (!isCurrentDefectInNewList) {
+          const defaultDefect = elementData.defects[0];
+          if (defaultDefect) {
+            setAnomaly(prev => ({
+                ...prev,
+                element: selectedElement,
+                defect: defaultDefect.name,
+                level: defaultDefect.level,
+            }));
+          }
+      } else {
+         setAnomaly(prev => ({ ...prev, element: selectedElement }));
       }
     }
-  }, [selectedElement]);
+  }, [selectedElement, anomaly.defect]);
 
   const handleElementChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedElement(e.target.value);
@@ -72,47 +124,31 @@ const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocat
     }
   };
   
+  const handleClearPhoto = () => {
+    setAnomaly(prev => ({ ...prev, photo: '' }));
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
   const handleClearLocation = () => {
     setAnomaly(prev => ({ ...prev, location: undefined }));
   };
-
-  const handleGetLocation = () => {
-    setIsGettingLocation(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((position) => {
-        setAnomaly(prev => ({
-          ...prev,
-          location: {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }
-        }));
-        setIsGettingLocation(false);
-      }, (error: GeolocationPositionError) => {
-        console.error("Error getting location:", error.message);
-        alert(`No se pudo obtener la ubicación: ${error.message}. Por favor, compruebe los permisos de su navegador.`);
-        setIsGettingLocation(false);
-      });
-    } else {
-      alert("La geolocalización no es compatible con este navegador.");
-      setIsGettingLocation(false);
-    }
-  };
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if(anomaly.defect) {
         onSave(anomaly);
     } else {
-        alert("Please select a defect.");
+        alert("Por favor, seleccione un defecto.");
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg animate-fade-in-up max-h-full overflow-y-auto">
-        <h2 className="text-2xl font-bold text-[#1A4488] mb-6">Registrar Nueva Anomalía</h2>
+        <h2 className="text-2xl font-bold text-[#1A4488] mb-6">
+            {editingAnomaly ? 'Editar Anomalía' : 'Registrar Nueva Anomalía'}
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#333333]">Elemento</label>
@@ -158,8 +194,40 @@ const AnomalyForm: React.FC<AnomalyFormProps> = ({ onSave, onClose, initialLocat
             <textarea name="notes" value={anomaly.notes} onChange={handleChange} rows={3} className="mt-1 w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-[#1A4488] focus:border-[#1A4488]"></textarea>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#333333]">Fotografía (Opcional)</label>
-            <input type="file" accept="image/*" onChange={handlePhotoChange} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-[#1A4488] hover:file:bg-blue-100" />
+            <label className="block text-sm font-medium text-[#333333] mb-2">Fotografía (Opcional)</label>
+            {anomaly.photo ? (
+                <div className="relative w-32 h-32">
+                    <img src={anomaly.photo} alt="Vista previa de la anomalía" className="w-full h-full object-cover rounded-md border" />
+                    <button
+                        type="button"
+                        onClick={handleClearPhoto}
+                        className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 shadow-md hover:bg-red-700"
+                        aria-label="Eliminar foto"
+                    >
+                        <XIcon />
+                    </button>
+                </div>
+            ) : (
+                <div className="flex items-center space-x-4">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#333333] hover:bg-gray-50 transition">Subir Archivo</button>
+                    <button type="button" onClick={() => cameraInputRef.current?.click()} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-[#333333] hover:bg-gray-50 transition">Tomar Foto</button>
+                </div>
+            )}
+            <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                ref={fileInputRef}
+                className="hidden"
+            />
+            <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoChange}
+                ref={cameraInputRef}
+                className="hidden"
+            />
           </div>
           <div className="pt-4 flex justify-end space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 border border-gray-300 rounded-md text-[#333333] hover:bg-gray-100 transition">Cancelar</button>
